@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProductsModule } from './app/products/products.module';
+import { ProductModule } from './app/product/product.module';
 import { CustomerModule } from './app/customer/customer.module';
 import { OrderItemModule } from './app/order-item/order-item.module';
 import { OrderModule } from './app/order/order.module';
@@ -16,7 +16,7 @@ import { OrderModule } from './app/order/order.module';
     database: 'ecommerce',
     entities: [__dirname + '/**/*.entity{.ts,.js}'],
     synchronize: true,
-  }),CustomerModule,OrderItemModule,OrderModule,ProductsModule],
+  }),CustomerModule,OrderItemModule,OrderModule,ProductModule],
   controllers: [],
   providers: [],
 })
