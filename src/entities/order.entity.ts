@@ -1,24 +1,25 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { Customer } from './customer.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany,ManyToOne } from 'typeorm';
 import { OrderItem } from './order-item.entity';
+import { Customer } from './customer.entity';
 
 @Entity()
 export class Order {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  orderDate: Date;
+  customerId: number;
 
-  @Column('decimal')
+  @ManyToOne(() => Customer, (customer) => customer.orders)
+  customer: Customer;
+
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
+  items: OrderItem[];
+
+  @Column()
   totalAmount: number;
 
   @Column()
   status: string;
 
-  @ManyToOne(() => Customer, (customer) => customer.orders)
-  customer: Customer;
-
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order)
-  orderItems: OrderItem[];
 }
