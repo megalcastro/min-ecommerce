@@ -5,7 +5,7 @@
 # Logs
 logs
 *.log
-npm-debug.log*
+npm-d`e`bug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -33,3 +33,6 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# enviroments env
+/.env

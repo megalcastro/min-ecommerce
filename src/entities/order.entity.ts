@@ -23,7 +23,10 @@ export class Order {
   @Column({
     type: 'enum',
     enum: OrderStatus,
-    default: OrderStatus.PENDING, // Establece el valor predeterminado
+    default: OrderStatus.PENDING,
   })
   status: OrderStatus;
+
+  @Column({ nullable: true })
+  transactionId: string;
 }

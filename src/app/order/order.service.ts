@@ -7,7 +7,6 @@ import { Product } from '../../entities/product.entity';
 import { Customer } from '../../entities/customer.entity';
 import { OrderStatus } from './order-status.enum';
 
-
 @Injectable()
 export class OrderService {
   constructor(
@@ -81,7 +80,7 @@ export class OrderService {
     return order;
   }
 
-  async update(id: string, orderData: Order): Promise<Order> {
+  async update(id: string, orderData: Partial<Order>): Promise<Order> {
     const order = await this.orderRepository.preload({
       id: id,
       ...orderData,
@@ -91,30 +90,7 @@ export class OrderService {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
-    const oldOrder = await this.orderRepository.findOne({
-      where: { id },
-      relations: ['items'],
-    });
-
     await this.orderRepository.save(order);
-
-    if (oldOrder) {
-      for (const item of oldOrder.items) {
-        const product = await this.productRepository.findOneBy({ id: item.product.id });
-        if (product) {
-          product.stock += item.quantity;
-          await this.productRepository.save(product);
-        }
-      }
-    }
-
-    for (const item of order.items) {
-      const product = await this.productRepository.findOneBy({ id: item.product.id });
-      if (product) {
-        product.stock -= item.quantity;
-        await this.productRepository.save(product);
-      }
-    }
 
     return order;
   }
@@ -138,5 +114,27 @@ export class OrderService {
     }
 
     await this.orderRepository.delete(id);
+  }
+
+  async handlePayment(orderId: string, paymentResult: string): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['items'],
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    if (paymentResult === 'success') {
+      order.status = OrderStatus.PAID;
+    } else {
+      order.status = OrderStatus.FAILED;
+    }
+
+    // Update the order status
+    await this.orderRepository.save(order);
+
+    return order;
   }
 }
