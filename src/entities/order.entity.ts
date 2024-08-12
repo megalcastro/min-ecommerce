@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany,ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
 import { OrderItem } from './order-item.entity';
 import { Customer } from './customer.entity';
+import { OrderStatus } from '../app/order/order-status.enum'; // Importa el enum
 
 @Entity()
 export class Order {
@@ -16,10 +17,13 @@ export class Order {
   @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
   items: OrderItem[];
 
-  @Column()
+  @Column({ type: 'float', default: 0 })
   totalAmount: number;
 
-  @Column()
-  status: string;
-
+  @Column({
+    type: 'enum',
+    enum: OrderStatus,
+    default: OrderStatus.PENDING, // Establece el valor predeterminado
+  })
+  status: OrderStatus;
 }

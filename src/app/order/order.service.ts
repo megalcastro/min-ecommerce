@@ -5,6 +5,8 @@ import { Order } from '../../entities/order.entity';
 import { OrderItem } from '../../entities/order-item.entity';
 import { Product } from '../../entities/product.entity';
 import { Customer } from '../../entities/customer.entity';
+import { OrderStatus } from './order-status.enum';
+
 
 @Injectable()
 export class OrderService {
@@ -22,27 +24,42 @@ export class OrderService {
     private readonly customerRepository: Repository<Customer>,
   ) {}
 
-  async create(orderData: Order): Promise<Order> {
+  async create(orderData: any): Promise<Order> {
     const customer = await this.customerRepository.findOneBy({ id: orderData.customerId });
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${orderData.customerId} not found`);
     }
 
     const order = this.orderRepository.create({
-      ...orderData,
       customer,
+      status: OrderStatus.PENDING,
+      items: [],
     });
 
-    const savedOrder = await this.orderRepository.save(order);
+    let totalAmount = 0;
 
-    for (const item of order.items) {
-      const product = await this.productRepository.findOneBy({ id: item.product.id });
+    for (const itemData of orderData.items) {
+      const product = await this.productRepository.findOneBy({ id: itemData.productId });
       if (!product) {
-        throw new NotFoundException(`Product with ID ${item.product.id} not found`);
+        throw new NotFoundException(`Product with ID ${itemData.productId} not found`);
       }
-      product.stock -= item.quantity;
+
+      const orderItem = this.orderItemRepository.create({
+        product,
+        quantity: itemData.quantity,
+      });
+
+      totalAmount += product.price * itemData.quantity;
+
+      product.stock -= itemData.quantity;
       await this.productRepository.save(product);
+
+      order.items.push(orderItem);
     }
+
+    order.totalAmount = totalAmount;
+
+    const savedOrder = await this.orderRepository.save(order);
 
     return savedOrder;
   }
