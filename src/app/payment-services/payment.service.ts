@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-//import axios from 'axios';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
 
 import { OrderService } from '../order/order.service';
 import { ProductService } from '../product/product.service';
 import { OrderStatus } from '../order/order-status.enum';
+import { encrypt } from '../../utils/utils';
 
 
 
@@ -15,25 +16,61 @@ export class PaymentService {
   ) {}
 
   async createTransaction(orderId: string): Promise<string> {
-    // Paso 1: Crear la transacción en PENDING
-    const order = await this.orderService.findOne(orderId);
-    if (!order) {
-      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    try {
+        const order = await this.orderService.findOne(orderId);
+        if (!order) {
+            throw new NotFoundException(`Order with ID ${orderId} not found`);
+        }
+
+        const amountInCents = order.totalAmount * 100 * 1000;
+        const signature = await encrypt({
+            reference: order.id,
+            amount: amountInCents,
+            currency: 'COP'
+        });
+
+        const transactionPayload = {
+            amount_in_cents: amountInCents,
+            currency: 'COP',
+            signature,
+            customer_email: order.customer.email,
+            payment_method: {
+                installments: 1
+            },
+            reference: order.id,
+            payment_source_id: 25841
+        };
+
+        console.log('payload',transactionPayload);
+
+        const privateKey = process.env.PRIVATE_KEY;
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${privateKey}`
+            }
+        };
+
+        const { data } = await axios.post(
+            `${process.env.BASE_URL_TRANSACTION}/v1/transactions`,
+            transactionPayload,
+            config
+        );
+
+        return data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+          
+          const statusCode = error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+          const errorMessage = error.response?.data || 'An error occurred while processing the payment';
+          throw new HttpException(errorMessage, statusCode);
+        } else {
+          throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-    console.log('lol',process.env.BASE_URL_TRANSACTION);
-    // const response = await axios.post(`${process.env.BASE_URL_TRANSACTION}/v1/transactions`, {
-    //   amount_in_cents: order.totalAmount * 100, // El monto debe estar en centavos
-    //   currency: 'COP',
-    //   payment_method: 'card',
-    //   // Otros parámetros requeridos por Wompi
-    // });
+}
 
-    // const transactionId = response.data.id;
-    // await this.orderService.update(orderId, { transactionId });
 
-    // return transactionId;
-    return ;
-  }
 
   async handlePayment(orderId: string, transactionResult: string): Promise<void> {
 

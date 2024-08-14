@@ -20,4 +20,10 @@ export class Product {
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
   orderItems: OrderItem[];
+
+  @Column({
+    type: 'varchar',
+    default: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/Image-not-found.png'
+  })
+  image:string;
 }
